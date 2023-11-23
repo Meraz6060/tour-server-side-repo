@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const { ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -28,12 +29,12 @@ const client = new MongoClient(uri, {
       await client.connect();
 
 
-      const serviceCollection = client.db('tour-guide').collection('services');
+      const serviceCollection = client.db('tour-guide').collection('travel_services');
       const bookingCollection = client.db('tour-guide').collection('bookings');
 
 
-
-      app.get('/api/v1/services', async (req, res) => {
+///show all data 
+      app.get('/travel_services', async (req, res) => {
         try {
           const cursor = serviceCollection.find();
           const result = await cursor.toArray();
@@ -44,21 +45,95 @@ const client = new MongoClient(uri, {
         }
       });
 
+      //query data 
+      app.get('/travel_services/:id', async (req, res) => {
+        try {
+          const id = req.params.id;
+          const query ={ _id : new ObjectId(id)}
+          const result = await serviceCollection.findOne(query);
+          res.send(result);
+        } catch (error) {
+          console.error("Error fetching services:", error);
+          res.status(500).send("Internal Server Error");
+        }
+      });
+
+// booking data 
+      app.post('/booking', async (req, res) => {
+        try {
+            const booking = req.body;
+            const result = await bookingCollection.insertOne(booking);
+            res.send(result);
+        } catch (error) {
+            console.error("Error creating booking:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    });
+// get booking data 
+    app.get('/booking', async (req, res) => {
+      console.log(req.query.email);
+        try {
+            let query = {}
+            if (req.query?.email){
+              query ={ email: req.query.email }
+
+            }
+            const result = await bookingCollection.find().toArray();
+            res.send(result);
+        } catch (error) {
+            console.error("Error creating booking:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    });
+
+
+    // Delete  booking data 
+    app.delete('/booking/:id', async (req, res) => {
+        try {
+          const id = req.params.id;
+          const query = {_id: new ObjectId(id)}
+          const result = await bookingCollection.deleteOne(query);
+            res.send(result);
+        } catch (error) {
+            console.error("Error creating booking:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    });
+
+
+        // Update  booking data 
+     app.patch('/booking/:id', async (req, res) => {
+          try {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)};
+            const updateBooking =req.body;
+            const updateDoc = {
+              $set: {
+                status: updateBooking.status
+              },
+            };
+            const result = await bookingCollection.updateOne(filter, updateDoc );
+              res.send(result);
+          } catch (error) {
+              console.error("Error creating booking:", error);
+              res.status(500).send("Internal Server Error");
+          }
+      });
       // get data GET 
-      // app.get('/api/v1/services', async (req, res) => {
+      // app.get('/services', async (req, res) => {
       //   const cursor = serviceCollection.find();
       //   const result = await cursor.toArray();
       //   res.send(result);
       // });  
 
       // // POST method 
-      // app.post('/api/v1/user/create-booking', async (req, res) =>{
+      // app.post('/user/create-booking', async (req, res) =>{
       //   const booking =req.body;
       //   const result = await bookingCollection.insertOne(booking)
       //   res.send(result);
       // });
 
-      app.post('/api/v1/user/create-booking', async (req, res) => {
+      app.post('/user/create-booking', async (req, res) => {
         try {
             const booking = req.body;
             const result = await bookingCollection.insertOne(booking);
